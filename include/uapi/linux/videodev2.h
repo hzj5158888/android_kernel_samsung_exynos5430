@@ -1206,6 +1206,47 @@ struct v4l2_dv_timings_cap {
 };
 
 /*
+ *	V I D E O	T I M I N G S	D V	P R E S E T
+ */
+struct v4l2_dv_preset {
+	__u32	preset;
+	__u32	reserved[4];
+};
+ /*
+ *	D V	P R E S E T S	E N U M E R A T I O N
+ */
+struct v4l2_dv_enum_preset {
+	__u32	index;
+	__u32	preset;
+	__u8	name[32]; /* Name of the preset timing */
+	__u32	width;
+	__u32	height;
+	__u32	reserved[4];
+};
+ /*
+ * 	D V	P R E S E T	V A L U E S
+ */
+#define		V4L2_DV_INVALID		0
+#define		V4L2_DV_480P59_94	1 /* BT.1362 */
+#define		V4L2_DV_576P50		2 /* BT.1362 */
+#define		V4L2_DV_720P24		3 /* SMPTE 296M */
+#define		V4L2_DV_720P25		4 /* SMPTE 296M */
+#define		V4L2_DV_720P30		5 /* SMPTE 296M */
+#define		V4L2_DV_720P50		6 /* SMPTE 296M */
+#define		V4L2_DV_720P59_94	7 /* SMPTE 274M */
+#define		V4L2_DV_720P60		8 /* SMPTE 274M/296M */
+#define		V4L2_DV_1080I29_97	9 /* BT.1120/ SMPTE 274M */
+#define		V4L2_DV_1080I30		10 /* BT.1120/ SMPTE 274M */
+#define		V4L2_DV_1080I25		11 /* BT.1120 */
+#define		V4L2_DV_1080I50		12 /* SMPTE 296M */
+#define		V4L2_DV_1080I60		13 /* SMPTE 296M */
+#define		V4L2_DV_1080P24		14 /* SMPTE 296M */
+#define		V4L2_DV_1080P25		15 /* SMPTE 296M */
+#define		V4L2_DV_1080P30		16 /* SMPTE 296M */
+#define		V4L2_DV_1080P50		17 /* BT.1120 */
+#define		V4L2_DV_1080P60		18 /* BT.1120 */
+
+/*
  *	V I D E O   I N P U T S
  */
 struct v4l2_input {

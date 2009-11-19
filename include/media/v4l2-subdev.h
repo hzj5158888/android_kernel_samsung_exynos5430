@@ -281,8 +281,7 @@ struct v4l2_mbus_frame_desc {
 
    s_dv_preset: set dv (Digital Video) preset in the sub device. Similar to
 	s_std()
-
-   query_dv_preset: query dv preset in the sub device. This is similar to
+    query_dv_preset: query dv preset in the sub device. This is similar to
 	querystd()
 
    s_dv_timings(): Set custom dv timings in the sub device. This is used
