@@ -3041,9 +3041,15 @@ static struct file *path_openat(int dfd, struct filename *pathname,
 
 	file->f_flags = op->open_flag;
 
+<<<<<<< HEAD
 	if (unlikely(file->f_flags & __O_TMPFILE)) {
 		error = do_tmpfile(dfd, pathname, nd, flags, op, file, &opened);
 		goto out2;
+=======
+	if (unlikely(file->f_flags & O_TMPFILE)) {
+		error = do_tmpfile(dfd, pathname, nd, flags, op, file, &opened);
+		goto out;
+>>>>>>> 17673d74576... [O_TMPFILE] it's still short a few helpers, but infrastructure should be OK now...
 	}
 
 	error = path_init(dfd, pathname->name, flags | LOOKUP_PARENT, nd, &base);
@@ -3604,13 +3610,12 @@ retry:
 		inode = dentry->d_inode;
 		if (!inode)
 			goto slashes;
-<<<<<<< HEAD
-=======
+			
 		if (inode->i_sb->s_op->unlink_callback) {
 			path_buf = kmalloc(PATH_MAX, GFP_KERNEL);
 			propagate_path = dentry_path_raw(dentry, path_buf, PATH_MAX);
 		}
->>>>>>> 76a813036e3... fs: update for sdcardfs
+
 		ihold(inode);
 		error = security_path_unlink(&nd.path, dentry);
 		if (error)
@@ -3620,16 +3625,16 @@ exit2:
 		dput(dentry);
 	}
 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
-<<<<<<< HEAD
-=======
+	
 	if (path_buf && !error) {
 		inode->i_sb->s_op->unlink_callback(inode->i_sb, propagate_path);
 	}
+	
 	if (path_buf) {
 		kfree(path_buf);
 		path_buf = NULL;
 	}
->>>>>>> 76a813036e3... fs: update for sdcardfs
+	
 	if (inode)
 		iput(inode);	/* truncate the inode here */
 	mnt_drop_write(nd.path.mnt);
