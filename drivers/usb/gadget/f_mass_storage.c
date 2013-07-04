@@ -2608,6 +2608,104 @@ static inline void fsg_common_put(struct fsg_common *common)
 	kref_put(&common->ref, fsg_common_release);
 }
 
+#if 0
+/*
+ * This function creates device entry for LUN and its related paramters.
+*/
+static int create_lun_device(struct fsg_common *common,
+				struct usb_composite_dev *cdev,
+				struct fsg_config *cfg,
+				int add_lun_index)
+{
+	struct usb_gadget *gadget = cdev->gadget;
+	struct fsg_lun *curlun = common->luns;
+	struct fsg_lun_config *lcfg = cfg->luns;
+	int rc = 0, i;
+	int nluns = cfg->nluns;
+
+	/*
+	 * Check if index is non-zero, increment current lun_config
+	 * and cur_lun pointers.
+	 */
+	lcfg += add_lun_index;
+	curlun += add_lun_index;
+
+	for (i = add_lun_index; i < nluns; ++i, ++curlun, ++lcfg) {
+		curlun->cdrom = !!lcfg->cdrom;
+#ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
+		curlun->ro = lcfg->ro;
+#else
+		curlun->ro = lcfg->cdrom || lcfg->ro;
+#endif
+		curlun->initially_ro = curlun->ro;
+		curlun->removable = lcfg->removable;
+		curlun->nofua = lcfg->nofua;
+		curlun->dev.release = fsg_lun_release;
+		curlun->dev.parent = &gadget->dev;
+		/* curlun->dev.driver = &fsg_driver.driver; XXX */
+		dev_set_drvdata(&curlun->dev, &common->filesem);
+		dev_set_name(&curlun->dev, "lun%d", i);
+
+		rc = device_register(&curlun->dev);
+		if (rc) {
+			pr_err("failed to register LUN%d: %d\n", i, rc);
+			common->nluns = i;
+			put_device(&curlun->dev);
+			goto error_release;
+		}
+
+		rc = device_create_file(&curlun->dev,
+					curlun->cdrom
+				      ? &dev_attr_ro_cdrom
+				      : &dev_attr_ro);
+		if (rc)
+			goto error_luns;
+
+		rc = device_create_file(&curlun->dev,
+					curlun->removable
+				      ? &dev_attr_file
+				      : &dev_attr_file_nonremovable);
+		if (rc)
+			goto error_luns;
+
+		rc = device_create_file(&curlun->dev, &dev_attr_nofua);
+		if (rc)
+			goto error_luns;
+
+		rc = device_create_file(&curlun->dev, &dev_attr_cdrom);
+		if (rc)
+			goto error_luns;
+#ifdef CONFIG_USB_MSC_PROFILING
+		rc = device_create_file(&curlun->dev, &dev_attr_perf);
+		if (rc)
+			pr_err("failed to create perf sysfs node:%d\n", rc);
+#endif
+		if (lcfg->filename) {
+			rc = fsg_lun_open(curlun, lcfg->filename);
+			if (rc) {
+				pr_err("failed to open lun file.\n");
+				goto error_luns;
+			}
+		} else if (!curlun->removable && !curlun->cdrom) {
+			ERROR(common, "no file given for LUN%d\n", i);
+			rc = -EINVAL;
+			goto error_luns;
+		}
+	}
+
+	common->nluns = nluns;
+	return rc;
+
+error_luns:
+	common->nluns = i;
+error_release:
+	common->state = FSG_STATE_TERMINATED;
+	fsg_common_release(&common->ref);
+
+	return rc;
+}
+#endif
+
 static struct fsg_common *fsg_common_init(struct fsg_common *common,
 					  struct usb_composite_dev *cdev,
 					  struct fsg_config *cfg)
