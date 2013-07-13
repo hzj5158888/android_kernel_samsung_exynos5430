@@ -3047,16 +3047,9 @@ static struct file *path_openat(int dfd, struct filename *pathname,
 
 	file->f_flags = op->open_flag;
 
-<<<<<<< HEAD
 	if (unlikely(file->f_flags & __O_TMPFILE)) {
 		error = do_tmpfile(dfd, pathname, nd, flags, op, file, &opened);
 		goto out2;
-=======
-	if (unlikely(file->f_flags & O_TMPFILE)) {
-		error = do_tmpfile(dfd, pathname, nd, flags, op, file, &opened);
-		goto out;
->>>>>>> 17673d74576... [O_TMPFILE] it's still short a few helpers, but infrastructure should be OK now...
-	}
 
 	error = path_init(dfd, pathname->name, flags | LOOKUP_PARENT, nd, &base);
 	if (unlikely(error))
