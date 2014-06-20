@@ -59,7 +59,7 @@ static unsigned int order_to_size(int order)
 
 struct ion_system_heap {
 	struct ion_heap heap;
-	struct ion_page_pool *pools[0];
+	struct ion_page_pool **pools;
 };
 
 static struct page *alloc_buffer_page(struct ion_system_heap *heap,
@@ -551,14 +551,19 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *unused)
 	struct ion_system_heap *heap;
 	int i;
 
-	heap = kzalloc(sizeof(struct ion_system_heap) +
-			sizeof(struct ion_page_pool *) * num_orders * 2,
-			GFP_KERNEL);
+	compiletime_assert((ZONES_PGSHIFT - __NR_PAGEFLAGS) > 0,
+			"No space in pageflags for ion_system_heap");
+
+	heap = kzalloc(sizeof(struct ion_system_heap), GFP_KERNEL);
 	if (!heap)
 		return ERR_PTR(-ENOMEM);
 	heap->heap.ops = &system_heap_ops;
 	heap->heap.type = ION_HEAP_TYPE_SYSTEM;
 	heap->heap.flags = ION_HEAP_FLAG_DEFER_FREE;
+	heap->pools = kzalloc(sizeof(struct ion_page_pool *) * num_orders * 2,
+			      GFP_KERNEL);
+	if (!heap->pools)
+		goto err_alloc_pools;
 	for (i = 0; i < num_orders * 2; i++) {
 		struct ion_page_pool *pool;
 		gfp_t gfp_flags = low_order_gfp_flags;
@@ -577,9 +582,12 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *unused)
 	register_shrinker(&heap->heap.shrinker);
 	heap->heap.debug_show = ion_system_heap_debug_show;
 	return &heap->heap;
-destroy_pools:
-	while (i--)
-		ion_page_pool_destroy(heap->pools[i]);
+err_create_pool:
+	for (i = 0; i < num_orders * 2; i++)
+		if (heap->pools[i])
+			ion_page_pool_destroy(heap->pools[i]);
+	kfree(heap->pools);
+err_alloc_pools:
 	kfree(heap);
 	return ERR_PTR(-ENOMEM);
 }
@@ -593,7 +601,6 @@ void ion_system_heap_destroy(struct ion_heap *heap)
 
 	for (i = 0; i < num_orders; i++)
 		ion_page_pool_destroy(sys_heap->pools[i]);
-	kfree(sys_heap->pools);
 	kfree(sys_heap);
 }
 
