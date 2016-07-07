@@ -36,21 +36,22 @@ static int __init irq_affinity_setup(char *str)
 }
 __setup("irqaffinity=", irq_affinity_setup);
 
-#ifdef CONFIG_SCHED_HMP
 extern struct cpumask hmp_slow_cpu_mask;
-#endif
+
 static void __init init_irq_default_affinity(void)
 {
 #ifdef CONFIG_CPUMASK_OFFSTACK
 	if (!irq_default_affinity)
 		zalloc_cpumask_var(&irq_default_affinity, GFP_NOWAIT);
 #endif
-	if (cpumask_empty(irq_default_affinity))
 #ifdef CONFIG_SCHED_HMP
+	if (!cpumask_empty(&hmp_slow_cpu_mask)) {
 		cpumask_copy(irq_default_affinity, &hmp_slow_cpu_mask);
-#else
-		cpumask_setall(irq_default_affinity);
+		return;
+	}
 #endif
+	if (cpumask_empty(irq_default_affinity))
+		cpumask_setall(irq_default_affinity);
 }
 #else
 static void __init init_irq_default_affinity(void)
@@ -298,6 +299,7 @@ struct irq_desc *irq_to_desc(unsigned int irq)
 {
 	return (irq < NR_IRQS) ? irq_desc + irq : NULL;
 }
+EXPORT_SYMBOL(irq_to_desc);
 
 static void free_desc(unsigned int irq)
 {

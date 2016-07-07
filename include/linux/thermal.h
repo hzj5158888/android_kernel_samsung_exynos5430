@@ -25,6 +25,7 @@
 #ifndef __THERMAL_H__
 #define __THERMAL_H__
 
+#include <linux/of.h>
 #include <linux/idr.h>
 #include <linux/device.h>
 #include <linux/workqueue.h>
@@ -69,6 +70,7 @@ enum thermal_device_mode {
 enum thermal_trip_type {
 	THERMAL_TRIP_ACTIVE = 0,
 	THERMAL_TRIP_PASSIVE,
+	THERMAL_TRIP_HOT,
 	THERMAL_TRIP_CRITICAL,
 };
 
@@ -130,7 +132,6 @@ struct thermal_zone_device_ops {
 			  enum thermal_trend *);
 	int (*notify) (struct thermal_zone_device *, int,
 		       enum thermal_trip_type);
-	int (*throttle_cpu_hotplug) (struct thermal_zone_device *);
 };
 
 struct thermal_cooling_device_ops {
@@ -143,6 +144,7 @@ struct thermal_cooling_device {
 	int id;
 	char type[THERMAL_NAME_LENGTH];
 	struct device device;
+	struct device_node *np;
 	void *devdata;
 	const struct thermal_cooling_device_ops *ops;
 	bool updated; /* true if the cooling device does not need update */
@@ -171,9 +173,8 @@ struct thermal_zone_device {
 	int last_temperature;
 	int emul_temperature;
 	int passive;
-	bool cooling_dev_en;
 	unsigned int forced_passive;
-	const struct thermal_zone_device_ops *ops;
+	struct thermal_zone_device_ops *ops;
 	const struct thermal_zone_params *tzp;
 	struct thermal_governor *governor;
 	struct list_head thermal_instances;
@@ -215,6 +216,14 @@ struct thermal_bind_params {
 /* Structure to define Thermal Zone parameters */
 struct thermal_zone_params {
 	char governor_name[THERMAL_NAME_LENGTH];
+
+	/*
+	 * a boolean to indicate if the thermal to hwmon sysfs interface
+	 * is required. when no_hwmon == false, a hwmon sysfs interface
+	 * will be created. when no_hwmon == true, nothing will be done
+	 */
+	bool no_hwmon;
+
 	int num_tbps;	/* Number of tbp entries */
 	struct thermal_bind_params *tbp;
 };
@@ -225,8 +234,31 @@ struct thermal_genl_event {
 };
 
 /* Function declarations */
+#ifdef CONFIG_THERMAL_OF
+struct thermal_zone_device *
+thermal_zone_of_sensor_register(struct device *dev, int id,
+				void *data, int (*get_temp)(void *, long *),
+				int (*get_trend)(void *, long *));
+void thermal_zone_of_sensor_unregister(struct device *dev,
+				       struct thermal_zone_device *tz);
+#else
+static inline struct thermal_zone_device *
+thermal_zone_of_sensor_register(struct device *dev, int id,
+				void *data, int (*get_temp)(void *, long *),
+				int (*get_trend)(void *, long *))
+{
+	return NULL;
+}
+
+static inline
+void thermal_zone_of_sensor_unregister(struct device *dev,
+				       struct thermal_zone_device *tz)
+{
+}
+
+#endif
 struct thermal_zone_device *thermal_zone_device_register(const char *, int, int,
-		void *, const struct thermal_zone_device_ops *,
+		void *, struct thermal_zone_device_ops *,
 		const struct thermal_zone_params *, int, int);
 void thermal_zone_device_unregister(struct thermal_zone_device *);
 
@@ -239,6 +271,9 @@ void thermal_zone_device_update(struct thermal_zone_device *);
 
 struct thermal_cooling_device *thermal_cooling_device_register(char *, void *,
 		const struct thermal_cooling_device_ops *);
+struct thermal_cooling_device *
+thermal_of_cooling_device_register(struct device_node *np, char *, void *,
+				   const struct thermal_cooling_device_ops *);
 void thermal_cooling_device_unregister(struct thermal_cooling_device *);
 struct thermal_zone_device *thermal_zone_get_zone_by_name(const char *name);
 int thermal_zone_get_temp(struct thermal_zone_device *tz, unsigned long *temp);

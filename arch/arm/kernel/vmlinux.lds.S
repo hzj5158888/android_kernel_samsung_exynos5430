@@ -8,9 +8,6 @@
 #include <asm/thread_info.h>
 #include <asm/memory.h>
 #include <asm/page.h>
-#ifdef CONFIG_STRICT_MEMORY_RWX
-#include <asm/pgtable.h>
-#endif
 	
 #define PROC_INFO							\
 	. = ALIGN(4);							\
@@ -118,12 +115,6 @@ SECTIONS
 		*(.got)			/* Global offset table		*/
 			ARM_CPU_KEEP(PROC_INFO)
 	}
-#ifdef CONFIG_RKP_TEST_INFRA
-	_end_stext = .;			/* End of text */
-#endif /*CONFIG_RKP_TEST_INFRA*/
-#ifdef CONFIG_STRICT_MEMORY_RWX
-	. = ALIGN(1<<SECTION_SHIFT);
-#endif
 
 	RO_DATA(PAGE_SIZE)
 
@@ -158,11 +149,7 @@ SECTIONS
 	_etext = .;			/* End of text and rodata section */
 
 #ifndef CONFIG_XIP_KERNEL
-#ifdef CONFIG_STRICT_MEMORY_RWX
-	. = ALIGN(1<<SECTION_SHIFT);
-#else
 	. = ALIGN(PAGE_SIZE);
-#endif
 	__init_begin = .;
 #endif
 	/*
@@ -223,10 +210,6 @@ SECTIONS
 		INIT_RAM_FS
 	}
 #ifndef CONFIG_XIP_KERNEL
-#ifdef CONFIG_STRICT_MEMORY_RWX
-	. = ALIGN(1<<SECTION_SHIFT);
-#endif
-	__init_data = .;
 	.exit.data : {
 		ARM_EXIT_KEEP(EXIT_DATA)
 	}
@@ -277,19 +260,6 @@ SECTIONS
 		_edata = .;
 	}
 	_edata_loc = __data_loc + SIZEOF(.data);
-
-#ifdef	CONFIG_TIMA_RKP_RO_CRED
-	 /* Creating a new section to store task credentials */
-	. = ALIGN(1<<SECTION_SHIFT);
-	.tima.rkp.initcred : {
-		__rkp_ro_start = .;
-	}
-	.tima.rkp.ro : {
-		. = __rkp_ro_start + 0x400000;
-		__rkp_ro_end = .;
-	}
-	. = ALIGN(1<<PAGE_SHIFT);
-#endif /* TIMA_RKP_RO_CRED */
 
 #ifdef CONFIG_HAVE_TCM
         /*

@@ -2679,7 +2679,7 @@ static struct {
 };
 
 static int fs_ratios[] = {
-	64, 128, 192, 256, 348, 512, 768, 1024, 1408, 1536
+	64, 128, 192, 256, 384, 512, 768, 1024, 1408, 1536
 };
 
 static int bclk_divs[] = {
@@ -2928,7 +2928,7 @@ static int wm8994_aif_mute(struct snd_soc_dai *codec_dai, int mute)
 		return -EINVAL;
 	}
 
-	if (mute && !codec_dai->active)
+	if (mute)
 		reg = WM8994_AIF1DAC1_MUTE;
 	else
 		reg = 0;

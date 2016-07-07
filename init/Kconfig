@@ -1371,6 +1371,14 @@ config FUTEX
 	  support for "fast userspace mutexes".  The resulting kernel may not
 	  run glibc-based applications correctly.
 
+config HAVE_FUTEX_CMPXCHG
+	bool
+	depends on FUTEX
+	help
+	  Architectures should select this if futex_atomic_cmpxchg_inatomic()
+	  is implemented and always working. This removes a couple of runtime
+	  checks.
+
 config EPOLL
 	bool "Enable eventpoll support" if EXPERT
 	default y
@@ -1520,20 +1528,6 @@ config SLUB_DEBUG
 	  SLUB sysfs support. /sys/slab will not exist and there will be
 	  no support for cache validation etc.
 
-config PTRACK_DEBUG
-	default n
-	bool "Enable Ptrack debugging support"
-	help
-	 PTRACK tracks page allocation.
-	 This option affects on booting time & running time.
-
-config BUFFERED_PTRACK
-	default n
-	bool "Enable Buffered Prack debugging"
-	depends on PTRACK_DEBUG
-	help
-	 BUFFERED_PTRACK has several latest ptrack of a page.
-
 config COMPAT_BRK
 	bool "Disable heap randomization"
 	default y
@@ -1601,12 +1595,6 @@ config MMAP_ALLOW_UNINITIALIZED
 
 	  See Documentation/nommu-mmap.txt for more information.
 
-config DEFERRED_INITCALLS
-	bool "Deferred initcalls support"
-	default n
-	help
-	  Say 'y' here to include support for deferred initcalls
-
 config PROFILING
 	bool "Profiling support"
 	help
@@ -1644,7 +1632,6 @@ config BASE_SMALL
 
 menuconfig MODULES
 	bool "Enable loadable module support"
-	select TIMA_LKMAUTH
 	help
 	  Kernel modules are small pieces of compiled code which can
 	  be inserted in the running kernel, rather than being

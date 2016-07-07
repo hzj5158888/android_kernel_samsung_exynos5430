@@ -135,7 +135,6 @@ static int crypto_ctr_crypt(struct blkcipher_desc *desc,
 	unsigned int bsize = crypto_cipher_blocksize(child);
 	int err;
 
-	memset(&walk, 0, sizeof(struct blkcipher_walk));
 	blkcipher_walk_init(&walk, dst, src, nbytes);
 	err = blkcipher_walk_virt_block(desc, &walk, bsize);
 
@@ -467,4 +466,5 @@ module_exit(crypto_ctr_module_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("CTR Counter block mode");
-MODULE_ALIAS("rfc3686");
+MODULE_ALIAS_CRYPTO("rfc3686");
+MODULE_ALIAS_CRYPTO("ctr");

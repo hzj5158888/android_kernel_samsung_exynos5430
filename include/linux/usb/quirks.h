@@ -30,16 +30,10 @@
    descriptor */
 #define USB_QUIRK_DELAY_INIT		0x00000040
 
-/* device does not need GET_STATUS request after reset_resume */
-#define USB_QUIRK_NO_GET_STATUS		0x00000100
+/* device generates spurious wakeup, ignore remote wakeup capability */
+#define USB_QUIRK_IGNORE_REMOTE_WAKEUP	0x00000200
 
-/* device needs hsic specific tunning */
-#define USB_QUIRK_HSIC_TUNE             0x00000200
-
-/* resume bus driver after dpm resume  */
-#define USB_QUIRK_NO_DPM_RESUME         0x00000400
-
-/* Remove the kobj list to avoid device_shutdown race condition */
-#define USB_QUIRK_NO_REMOTE_WAKEUP      0x00000800
+/* device can't handle Link Power Management */
+#define USB_QUIRK_NO_LPM			BIT(10)
 
 #endif /* __LINUX_USB_QUIRKS_H */

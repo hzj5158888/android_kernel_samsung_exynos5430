@@ -73,6 +73,10 @@ extern int			ipv6_chk_home_addr(struct net *net,
 						   const struct in6_addr *addr);
 #endif
 
+bool ipv6_chk_custom_prefix(const struct in6_addr *addr,
+				   const unsigned int prefix_len,
+				   struct net_device *dev);
+
 extern int			ipv6_chk_prefix(const struct in6_addr *addr,
 						struct net_device *dev);
 
@@ -186,6 +190,8 @@ static inline bool ipv6_is_mld(struct sk_buff *skb, int nexthdr, int offset)
 extern void addrconf_prefix_rcv(struct net_device *dev,
 				u8 *opt, int len, bool sllao);
 
+u32 addrconf_rt_table(const struct net_device *dev, u32 default_table);
+
 /*
  *	anycast prototypes (anycast.c)
  */
@@ -197,8 +203,7 @@ extern int ipv6_dev_ac_inc(struct net_device *dev, const struct in6_addr *addr);
 extern int __ipv6_dev_ac_dec(struct inet6_dev *idev, const struct in6_addr *addr);
 extern bool ipv6_chk_acast_addr(struct net *net, struct net_device *dev,
 				const struct in6_addr *addr);
-
-u32 addrconf_rt_table(const struct net_device *dev, u32 default_table);
+extern void ipv6_ac_destroy_dev(struct inet6_dev *idev);
 
 
 /* Device notifier */

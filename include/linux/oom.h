@@ -27,9 +27,6 @@ enum oom_scan_t {
 	OOM_SCAN_CONTINUE,	/* do not consider thread for oom kill */
 	OOM_SCAN_ABORT,		/* abort the iteration and return */
 	OOM_SCAN_SELECT,	/* always select this thread first */
-#ifdef CONFIG_OOM_SCAN_WA_PREVENT_WRONG_SEARCH
-	OOM_SCAN_SKIP_SEARCH_THREAD, /* skip to check the treads */
-#endif
 };
 
 /* Thread is the potential origin of an oom condition; kill first on oom */
@@ -53,6 +50,9 @@ static inline bool oom_task_origin(const struct task_struct *p)
 extern unsigned long oom_badness(struct task_struct *p,
 		struct mem_cgroup *memcg, const nodemask_t *nodemask,
 		unsigned long totalpages);
+
+extern int oom_kills_count(void);
+extern void note_oom_kill(void);
 extern void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
 			     unsigned int points, unsigned long totalpages,
 			     struct mem_cgroup *memcg, nodemask_t *nodemask,

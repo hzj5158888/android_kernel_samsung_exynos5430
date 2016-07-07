@@ -80,7 +80,7 @@
 #define MAX_EXECVE_AUDIT_LEN 7500
 
 /* number of audit rules */
-int audit_n_rules = 1;
+int audit_n_rules;
 
 /* determines whether we collect data for signals sent */
 int audit_signals;
@@ -1302,31 +1302,29 @@ static void audit_log_exit(struct audit_context *context, struct task_struct *ts
 	/* tsk == current */
 	context->personality = tsk->personality;
 
-	if (context->major != 294) { /* __NR_setsockopt */
-		ab = audit_log_start(context, GFP_KERNEL, AUDIT_SYSCALL);
-		if (!ab)
-			return;		/* audit_panic has been called */
-		audit_log_format(ab, "arch=%x syscall=%d",
-				 context->arch, context->major);
-		if (context->personality != PER_LINUX)
-			audit_log_format(ab, " per=%lx", context->personality);
-		if (context->return_valid)
-			audit_log_format(ab, " success=%s exit=%ld",
-					 (context->return_valid==AUDITSC_SUCCESS)?"yes":"no",
-					 context->return_code);
+	ab = audit_log_start(context, GFP_KERNEL, AUDIT_SYSCALL);
+	if (!ab)
+		return;		/* audit_panic has been called */
+	audit_log_format(ab, "arch=%x syscall=%d",
+			 context->arch, context->major);
+	if (context->personality != PER_LINUX)
+		audit_log_format(ab, " per=%lx", context->personality);
+	if (context->return_valid)
+		audit_log_format(ab, " success=%s exit=%ld",
+				 (context->return_valid==AUDITSC_SUCCESS)?"yes":"no",
+				 context->return_code);
 
-		audit_log_format(ab,
-				 " a0=%lx a1=%lx a2=%lx a3=%lx items=%d",
-				 context->argv[0],
-				 context->argv[1],
-				 context->argv[2],
-				 context->argv[3],
-				 context->name_count);
+	audit_log_format(ab,
+			 " a0=%lx a1=%lx a2=%lx a3=%lx items=%d",
+			 context->argv[0],
+			 context->argv[1],
+			 context->argv[2],
+			 context->argv[3],
+			 context->name_count);
 
-		audit_log_task_info(ab, tsk);
-		audit_log_key(ab, context->filterkey);
-		audit_log_end(ab);
-	}
+	audit_log_task_info(ab, tsk);
+	audit_log_key(ab, context->filterkey);
+	audit_log_end(ab);
 
 	for (aux = context->aux; aux; aux = aux->next) {
 
@@ -1410,8 +1408,11 @@ static void audit_log_exit(struct audit_context *context, struct task_struct *ts
 	}
 
 	i = 0;
-	list_for_each_entry(n, &context->names_list, list)
+	list_for_each_entry(n, &context->names_list, list) {
+		if (n->hidden)
+			continue;
 		audit_log_name(context, n, NULL, i++, &call_panic);
+	}
 
 	/* Send end of event record to help user space know we are finished */
 	ab = audit_log_start(context, GFP_KERNEL, AUDIT_EOE);
@@ -1780,14 +1781,15 @@ void audit_putname(struct filename *name)
  * __audit_inode - store the inode and device from a lookup
  * @name: name being audited
  * @dentry: dentry being audited
- * @parent: does this dentry represent the parent?
+ * @flags: attributes for this particular entry
  */
 void __audit_inode(struct filename *name, const struct dentry *dentry,
-		   unsigned int parent)
+		   unsigned int flags)
 {
 	struct audit_context *context = current->audit_context;
 	const struct inode *inode = dentry->d_inode;
 	struct audit_names *n;
+	bool parent = flags & AUDIT_INODE_PARENT;
 
 	if (!context->in_syscall)
 		return;
@@ -1842,6 +1844,8 @@ out:
 	if (parent) {
 		n->name_len = n->name ? parent_len(n->name->name) : AUDIT_NAME_FULL;
 		n->type = AUDIT_TYPE_PARENT;
+		if (flags & AUDIT_INODE_HIDDEN)
+			n->hidden = true;
 	} else {
 		n->name_len = AUDIT_NAME_FULL;
 		n->type = AUDIT_TYPE_NORMAL;

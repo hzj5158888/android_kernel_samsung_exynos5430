@@ -46,20 +46,18 @@ dtb-$(CONFIG_ARCH_DAVINCI) += da850-enbw-cmc.dtb \
 dtb-$(CONFIG_ARCH_DOVE) += dove-cm-a510.dtb \
 	dove-cubox.dtb \
 	dove-dove-db.dtb
-#dtb-$(CONFIG_ARCH_EXYNOS) += exynos4210-origen.dtb \
-#	exynos4210-smdkv310.dtb \
-#	exynos4210-trats.dtb \
-#	exynos4210-universal_c210.dtb \
-#	exynos4412-odroidx.dtb \
-#	exynos4412-smdk4412.dtb \
-#	exynos4412-origen.dtb \
-#	exynos5250-arndale.dtb \
-#	exynos5440-sd5v1.dtb \
-#	exynos5250-smdk5250.dtb \
-#	exynos5250-snow.dtb \
-#	exynos5422-smdk5422.dtb \
-#	exynos5430-xyref5430.dtb \
-#	exynos5440-ssdk5440.dtb
+dtb-$(CONFIG_ARCH_EXYNOS) += exynos4210-origen.dtb \
+	exynos4210-smdkv310.dtb \
+	exynos4210-trats.dtb \
+	exynos4210-universal_c210.dtb \
+	exynos4412-odroidx.dtb \
+	exynos4412-smdk4412.dtb \
+	exynos4412-origen.dtb \
+	exynos5250-arndale.dtb \
+	exynos5440-sd5v1.dtb \
+	exynos5250-smdk5250.dtb \
+	exynos5250-snow.dtb \
+	exynos5440-ssdk5440.dtb
 dtb-$(CONFIG_ARCH_HIGHBANK) += highbank.dtb \
 	ecx-2000.dtb
 dtb-$(CONFIG_ARCH_INTEGRATOR) += integratorap.dtb \
@@ -161,7 +159,6 @@ dtb-$(CONFIG_ARCH_U8500) += snowball.dtb \
 	hrefprev60.dtb \
 	hrefv60plus.dtb \
 	ccu9540.dtb
-dtb-$(CONFIG_ARCH_S3C24XX) += s3c2416-smdk2416.dtb
 dtb-$(CONFIG_ARCH_SHMOBILE) += emev2-kzm9d.dtb \
 	r8a7740-armadillo800eva.dtb \
 	r8a7778-bockw.dtb \
@@ -205,7 +202,14 @@ dtb-$(CONFIG_ARCH_VERSATILE) += versatile-ab.dtb \
 dtb-$(CONFIG_ARCH_VEXPRESS) += vexpress-v2p-ca5s.dtb \
 	vexpress-v2p-ca9.dtb \
 	vexpress-v2p-ca15-tc1.dtb \
-	vexpress-v2p-ca15_a7.dtb
+	vexpress-v2p-ca15_a7.dtb \
+	rtsm_ve-cortex_a9x2.dtb \
+	rtsm_ve-cortex_a9x4.dtb \
+	rtsm_ve-cortex_a15x1.dtb \
+	rtsm_ve-cortex_a15x2.dtb \
+	rtsm_ve-cortex_a15x4.dtb \
+	rtsm_ve-v2p-ca15x1-ca7x1.dtb \
+	rtsm_ve-v2p-ca15x4-ca7x4.dtb
 dtb-$(CONFIG_ARCH_VIRT) += xenvm-4.2.dtb
 dtb-$(CONFIG_ARCH_VT8500) += vt8500-bv07.dtb \
 	wm8505-ref.dtb \
@@ -213,20 +217,13 @@ dtb-$(CONFIG_ARCH_VT8500) += vt8500-bv07.dtb \
 	wm8850-w70v2.dtb
 dtb-$(CONFIG_ARCH_ZYNQ) += zynq-zc702.dtb
 
-DTB_NAMES := $(subst $\",,$(CONFIG_BUILD_ARM_APPENDED_DTB_IMAGE_NAMES))
-ifneq ($(DTB_NAMES),)
-DTB_LIST := $(addsuffix .dtb,$(DTB_NAMES))
-else
-DTB_LIST := $(dtb-y)
-endif
-
 targets += dtbs
-targets += $(DTB_LIST)
+targets += $(dtb-y)
 endif
 
 # *.dtb used to be generated in the directory above. Clean out the
 # old build results so people don't accidentally use them.
-dtbs: $(addprefix $(obj)/, $(DTB_LIST))
+dtbs: $(addprefix $(obj)/, $(dtb-y))
 	$(Q)rm -f $(obj)/../*.dtb
 
 clean-files := *.dtb
