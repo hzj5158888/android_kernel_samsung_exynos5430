@@ -781,8 +781,9 @@ asmlinkage long compat_sys_mount(const char __user * dev_name,
 	struct filename *dir;
 	int retval;
 
-	retval = copy_mount_string(type, &kernel_type);
-	if (retval < 0)
+	kernel_type = copy_mount_string(type);
+	retval = PTR_ERR(kernel_type);
+	if (IS_ERR(kernel_type))
 		goto out;
 
 	dir = getname(dir_name);
@@ -790,8 +791,9 @@ asmlinkage long compat_sys_mount(const char __user * dev_name,
 	if (IS_ERR(dir))
 		goto out1;
 
-	retval = copy_mount_string(dev_name, &kernel_dev);
-	if (retval < 0)
+	kernel_dev = copy_mount_string(dev_name);
+	retval = PTR_ERR(kernel_dev);
+	if (IS_ERR(kernel_dev))
 		goto out2;
 
 	retval = copy_mount_options(data, &data_page);
@@ -832,7 +834,6 @@ struct compat_old_linux_dirent {
 };
 
 struct compat_readdir_callback {
-	struct dir_context ctx;
 	struct compat_old_linux_dirent __user *dirent;
 	int result;
 };
@@ -874,15 +875,15 @@ asmlinkage long compat_sys_old_readdir(unsigned int fd,
 {
 	int error;
 	struct fd f = fdget(fd);
-	struct compat_readdir_callback buf = {
-		.ctx.actor = compat_fillonedir,
-		.dirent = dirent
-	};
+	struct compat_readdir_callback buf;
 
 	if (!f.file)
 		return -EBADF;
 
-	error = iterate_dir(f.file, &buf.ctx);
+	buf.result = 0;
+	buf.dirent = dirent;
+
+	error = vfs_readdir(f.file, compat_fillonedir, &buf);
 	if (buf.result)
 		error = buf.result;
 
@@ -898,7 +899,6 @@ struct compat_linux_dirent {
 };
 
 struct compat_getdents_callback {
-	struct dir_context ctx;
 	struct compat_linux_dirent __user *current_dir;
 	struct compat_linux_dirent __user *previous;
 	int count;
@@ -953,11 +953,7 @@ asmlinkage long compat_sys_getdents(unsigned int fd,
 {
 	struct fd f;
 	struct compat_linux_dirent __user * lastdirent;
-	struct compat_getdents_callback buf = {
-		.ctx.actor = compat_filldir,
-		.current_dir = dirent,
-		.count = count
-	};
+	struct compat_getdents_callback buf;
 	int error;
 
 	if (!access_ok(VERIFY_WRITE, dirent, count))
@@ -967,12 +963,17 @@ asmlinkage long compat_sys_getdents(unsigned int fd,
 	if (!f.file)
 		return -EBADF;
 
-	error = iterate_dir(f.file, &buf.ctx);
+	buf.current_dir = dirent;
+	buf.previous = NULL;
+	buf.count = count;
+	buf.error = 0;
+
+	error = vfs_readdir(f.file, compat_filldir, &buf);
 	if (error >= 0)
 		error = buf.error;
 	lastdirent = buf.previous;
 	if (lastdirent) {
-		if (put_user(buf.ctx.pos, &lastdirent->d_off))
+		if (put_user(f.file->f_pos, &lastdirent->d_off))
 			error = -EFAULT;
 		else
 			error = count - buf.count;
@@ -984,7 +985,6 @@ asmlinkage long compat_sys_getdents(unsigned int fd,
 #ifndef __ARCH_OMIT_COMPAT_SYS_GETDENTS64
 
 struct compat_getdents_callback64 {
-	struct dir_context ctx;
 	struct linux_dirent64 __user *current_dir;
 	struct linux_dirent64 __user *previous;
 	int count;
@@ -1038,11 +1038,7 @@ asmlinkage long compat_sys_getdents64(unsigned int fd,
 {
 	struct fd f;
 	struct linux_dirent64 __user * lastdirent;
-	struct compat_getdents_callback64 buf = {
-		.ctx.actor = compat_filldir64,
-		.current_dir = dirent,
-		.count = count
-	};
+	struct compat_getdents_callback64 buf;
 	int error;
 
 	if (!access_ok(VERIFY_WRITE, dirent, count))
@@ -1052,12 +1048,17 @@ asmlinkage long compat_sys_getdents64(unsigned int fd,
 	if (!f.file)
 		return -EBADF;
 
-	error = iterate_dir(f.file, &buf.ctx);
+	buf.current_dir = dirent;
+	buf.previous = NULL;
+	buf.count = count;
+	buf.error = 0;
+
+	error = vfs_readdir(f.file, compat_filldir64, &buf);
 	if (error >= 0)
 		error = buf.error;
 	lastdirent = buf.previous;
 	if (lastdirent) {
-		typeof(lastdirent->d_off) d_off = buf.ctx.pos;
+		typeof(lastdirent->d_off) d_off = f.file->f_pos;
 		if (__put_user_unaligned(d_off, &lastdirent->d_off))
 			error = -EFAULT;
 		else

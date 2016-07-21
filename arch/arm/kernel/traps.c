@@ -34,8 +34,10 @@
 #include <asm/unwind.h>
 #include <asm/tls.h>
 #include <asm/system_misc.h>
-#include <asm/opcodes.h>
 
+#ifdef CONFIG_SEC_DEBUG
+#include <linux/sec_debug.h>
+#endif
 static const char *handler[]= {
 	"prefetch abort",
 	"data abort",
@@ -246,7 +248,14 @@ static int __die(const char *str, int err, struct pt_regs *regs)
 		return 1;
 
 	print_modules();
+#if defined(CONFIG_SEC_DEBUG_UNHANDLED_FAULT_SAFE)
+	if (!strcmp("Unhandled fault", str))
+		__show_regs_without_extra(regs);
+	else
+		__show_regs(regs);
+#else
 	__show_regs(regs);
+#endif
 	printk(KERN_EMERG "Process %.*s (pid: %d, stack limit = 0x%p)\n",
 		TASK_COMM_LEN, tsk->comm, task_pid_nr(tsk), end_of_stack(tsk));
 
@@ -302,10 +311,19 @@ static void oops_end(unsigned long flags, struct pt_regs *regs, int signr)
 	raw_local_irq_restore(flags);
 	oops_exit();
 
+#if defined(CONFIG_SEC_DEBUG)
+	if (in_interrupt())
+		panic("%-51s\nPC is at %-42pS\nLR is at %-42pS",
+				"Fatal exception in interrupt", (void *)regs->ARM_pc, (void *)regs->ARM_lr);
+	if (panic_on_oops)
+		panic("%-51s\nPC is at %-42pS\nLR is at %-42pS",
+				"Fatal exception", (void *)regs->ARM_pc, (void *)regs->ARM_lr);
+#else
 	if (in_interrupt())
 		panic("Fatal exception in interrupt");
 	if (panic_on_oops)
 		panic("Fatal exception");
+#endif
 	if (signr)
 		do_exit(signr);
 }
@@ -326,6 +344,10 @@ void die(const char *str, struct pt_regs *regs, int err)
 
 	if (__die(str, err, regs))
 		sig = 0;
+
+#ifdef CONFIG_SEC_DEBUG_SUBSYS
+	sec_debug_save_die_info(str, regs);
+#endif
 
 	oops_end(flags, regs, sig);
 }
@@ -411,28 +433,25 @@ asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
 	if (processor_mode(regs) == SVC_MODE) {
 #ifdef CONFIG_THUMB2_KERNEL
 		if (thumb_mode(regs)) {
-			instr = __mem_to_opcode_thumb16(((u16 *)pc)[0]);
+			instr = ((u16 *)pc)[0];
 			if (is_wide_instruction(instr)) {
-				u16 inst2;
-				inst2 = __mem_to_opcode_thumb16(((u16 *)pc)[1]);
-				instr = __opcode_thumb32_compose(instr, inst2);
+				instr <<= 16;
+				instr |= ((u16 *)pc)[1];
 			}
 		} else
 #endif
-			instr = __mem_to_opcode_arm(*(u32 *) pc);
+			instr = *(u32 *) pc;
 	} else if (thumb_mode(regs)) {
 		if (get_user(instr, (u16 __user *)pc))
 			goto die_sig;
-		instr = __mem_to_opcode_thumb16(instr);
 		if (is_wide_instruction(instr)) {
 			unsigned int instr2;
 			if (get_user(instr2, (u16 __user *)pc+1))
 				goto die_sig;
-			instr2 = __mem_to_opcode_thumb16(instr2);
-			instr = __opcode_thumb32_compose(instr, instr2);
+			instr <<= 16;
+			instr |= instr2;
 		}
 	} else if (get_user(instr, (u32 __user *)pc)) {
-		instr = __mem_to_opcode_arm(instr);
 		goto die_sig;
 	}
 

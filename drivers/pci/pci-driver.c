@@ -1156,6 +1156,7 @@ int __pci_register_driver(struct pci_driver *drv, struct module *owner,
 void
 pci_unregister_driver(struct pci_driver *drv)
 {
+	printk(KERN_EMERG "\n\n%s: Enter\n", __func__);
 	driver_unregister(&drv->driver);
 	pci_free_dynids(drv);
 }

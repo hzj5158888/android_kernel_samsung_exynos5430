@@ -327,15 +327,6 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
 		goto free_ti;
 
 	tsk->stack = ti;
-#ifdef CONFIG_SECCOMP
-	/*
-	 * We must handle setting up seccomp filters once we're under
-	 * the sighand lock in case orig has changed between now and
-	 * then. Until then, filter must be NULL to avoid messing up
-	 * the usage counts on the error path calling free_task.
-	 */
-	tsk->seccomp.filter = NULL;
-#endif
 
 	setup_thread_stack(tsk, orig);
 	clear_user_return_notifier(tsk);
@@ -1117,39 +1108,6 @@ static void copy_flags(unsigned long clone_flags, struct task_struct *p)
 	p->flags = new_flags;
 }
 
-static void copy_seccomp(struct task_struct *p)
-{
-#ifdef CONFIG_SECCOMP
-	/*
-	 * Must be called with sighand->lock held, which is common to
-	 * all threads in the group. Holding cred_guard_mutex is not
-	 * needed because this new task is not yet running and cannot
-	 * be racing exec.
-	 */
-	assert_spin_locked(&current->sighand->siglock);
-
-	/* Ref-count the new filter user, and assign it. */
-	get_seccomp_filter(current);
-	p->seccomp = current->seccomp;
-
-	/*
-	 * Explicitly enable no_new_privs here in case it got set
-	 * between the task_struct being duplicated and holding the
-	 * sighand lock. The seccomp state and nnp must be in sync.
-	 */
-	if (task_no_new_privs(current))
-		task_set_no_new_privs(p);
-
-	/*
-	 * If the parent gained a seccomp mode after copying thread
-	 * flags and between before we held the sighand lock, we have
-	 * to manually enable the seccomp thread flag here.
-	 */
-	if (p->seccomp.mode != SECCOMP_MODE_DISABLED)
-		set_tsk_thread_flag(p, TIF_SECCOMP);
-#endif
-}
-
 SYSCALL_DEFINE1(set_tid_address, int __user *, tidptr)
 {
 	current->clear_child_tid = tidptr;
@@ -1186,6 +1144,14 @@ static void posix_cpu_timers_init(struct task_struct *tsk)
 	INIT_LIST_HEAD(&tsk->cpu_timers[2]);
 }
 
+#ifdef CONFIG_TIMA_RKP_RO_CRED
+void rkp_assign_pgd(struct task_struct *p)
+{
+	unsigned int pgd;
+	pgd = (unsigned int)(p->mm ? p->mm->pgd :swapper_pg_dir);
+	tima_send_cmd2((unsigned int)p->cred, (unsigned int)pgd, 0x43);
+}
+#endif /*CONFIG_TIMA_RKP_RO_CRED*/
 /*
  * This creates a new process as a copy of the old one,
  * but does not actually start it yet.
@@ -1254,6 +1220,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 		goto fork_out;
 
 	ftrace_graph_init_task(p);
+	get_seccomp_filter(p);
 
 	rt_mutex_init_task(p);
 
@@ -1299,7 +1266,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 
 	p->utime = p->stime = p->gtime = 0;
 	p->utimescaled = p->stimescaled = 0;
-	p->cpu_power = 0;
 #ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
 	p->prev_cputime.utime = p->prev_cputime.stime = 0;
 #endif
@@ -1497,12 +1463,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	spin_lock(&current->sighand->siglock);
 
 	/*
-	 * Copy seccomp details explicitly here, in case they were changed
-	 * before holding sighand lock.
-	 */
-	copy_seccomp(p);
-
-	/*
 	 * Process group and session signals need to be delivered to just the
 	 * parent before the fork or both the parent and the child after the
 	 * fork. Restart if a signal comes in before we add the new process to
@@ -1560,6 +1520,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	perf_event_fork(p);
 
 	trace_task_newtask(p, clone_flags);
+#ifdef CONFIG_TIMA_RKP_RO_CRED
+	rkp_assign_pgd(p);
+#endif/*CONFIG_TIMA_RKP_RO_CRED*/
 
 	return p;
 
