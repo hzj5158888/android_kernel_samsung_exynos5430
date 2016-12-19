@@ -824,7 +824,12 @@ nfs4_fl_prepare_ds(struct pnfs_layout_segment *lseg, u32 ds_idx)
 		/* Either ds is connected, or ds is NULL */
 		nfs4_wait_ds_connect(ds);
 	}
-	return ds;
+out_test_devid:
+	if (ret->ds_clp == NULL ||
+	    filelayout_test_devid_unavailable(devid))
+		ret = NULL;
+out:
+	return ret;
 }
 
 module_param(dataserver_retrans, uint, 0644);
