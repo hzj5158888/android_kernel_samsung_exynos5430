@@ -70,3 +70,4 @@ endif
 obj-$(CONFIG_DM_VERITY)		+= dmverity_query.o
 
 obj-y += dualwave/
+obj-$(CONFIG_UID_SYS_STATS) += uid_sys_stats.o
