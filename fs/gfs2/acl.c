@@ -269,6 +269,7 @@ static int gfs2_xattr_system_set(struct dentry *dentry, const char *name,
 	if (type == ACL_TYPE_ACCESS) {
 		umode_t mode = inode->i_mode;
 <<<<<<< HEAD
+<<<<<<< HEAD
 		struct posix_acl *old_acl = acl;
 
 		error = posix_acl_update_mode(inode, &mode, &acl);
@@ -277,8 +278,13 @@ static int gfs2_xattr_system_set(struct dentry *dentry, const char *name,
 		if (!acl)
 			posix_acl_release(old_acl);
 =======
+=======
+		struct posix_acl *old_acl = acl;
+>>>>>>> f0cf15a4389... ANDROID: fix acl leaks
 		error = posix_acl_update_mode(inode, &inode->i_mode, &acl);
 
+		if (!acl)
+			posix_acl_release(old_acl);
 		if (error)
 			goto out_release;
 >>>>>>> a1af58363aa... BACKPORT: posix_acl: Clear SGID bit when setting file permissions
