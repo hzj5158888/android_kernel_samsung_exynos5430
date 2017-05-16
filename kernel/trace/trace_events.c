@@ -430,6 +430,16 @@ static int tracing_release_generic_file(struct inode *inode, struct file *filp)
 {
 	struct ftrace_event_file *file = inode->i_private;
 	struct trace_array *tr = file->tr;
+	struct dentry *dir = file->dir;
+	struct dentry *child;
+
+	if (dir) {
+		spin_lock(&dir->d_lock);	/* probably unneeded */
+		list_for_each_entry(child, &dir->d_subdirs, d_child) {
+			if (child->d_inode)	/* probably unneeded */
+				child->d_inode->i_private = NULL;
+		}
+		spin_unlock(&dir->d_lock);
 
 	trace_array_put(tr);
 
