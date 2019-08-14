@@ -126,6 +126,7 @@ static unsigned long sel_last_ino = SEL_INO_NEXT - 1;
 #define SEL_INO_MASK			0x00ffffff
 
 #define TMPBUFLEN	12
+
 static ssize_t sel_read_enforce(struct file *filp, char __user *buf,
 				size_t count, loff_t *ppos)
 {
@@ -167,8 +168,22 @@ static ssize_t sel_write_enforce(struct file *file, const char __user *buf,
 	if (sscanf(page, "%d", &new_value) != 1)
 		goto out;
 
+<<<<<<< HEAD
 	new_value = new_value == 3 ? 1 : 0;
 
+=======
+#ifdef CONFIG_SECURITY_SELINUX_PERMISSIVE
+	new_value = 0;
+		length = task_has_security(current, SECURITY__SETENFORCE);
+		audit_log(current->audit_context, GFP_KERNEL, AUDIT_MAC_STATUS,
+			"enforcing=%d old_enforcing=%d auid=%u ses=%u",
+			new_value, selinux_enforcing,
+			from_kuid(&init_user_ns, audit_get_loginuid(current)),
+			audit_get_sessionid(current));
+		selinux_enforcing = new_value;
+		selnl_notify_setenforce(selinux_enforcing);
+		selinux_status_update_setenforce(selinux_enforcing);
+#else	
 	if (new_value != selinux_enforcing) {
 		length = task_has_security(current, SECURITY__SETENFORCE);
 		if (length)
@@ -184,6 +199,8 @@ static ssize_t sel_write_enforce(struct file *file, const char __user *buf,
 		selnl_notify_setenforce(selinux_enforcing);
 		selinux_status_update_setenforce(selinux_enforcing);
 	}
+#endif
+
 	length = count;
 out:
 	free_page((unsigned long) page);
