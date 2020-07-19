@@ -30,6 +30,9 @@
 #include <linux/sched.h>
 #include <linux/seq_file.h>
 #include <asm/cputime.h>
+#ifdef CONFIG_BL_SWITCHER
+#include <asm/bL_switcher.h>
+#endif
 
 #define UID_HASH_BITS 10
 
@@ -326,7 +329,7 @@ static ssize_t show_time_in_state(struct cpufreq_policy *policy, char *buf)
 	for (i = 0; i < stat->state_num; i++) {
 		len += sprintf(buf + len, "%u %llu\n", stat->freq_table[i],
 			(unsigned long long)
-			cputime64_to_clock_t(stat->time_in_state[i]));
+			jiffies_64_to_clock_t(stat->time_in_state[i]));
 	}
 	return len;
 }
@@ -603,19 +606,19 @@ put_ref:
 
 static void cpufreq_allstats_free(void)
 {
-	int i;
+	int cpu;
 	struct all_cpufreq_stats *all_stat;
 
 	sysfs_remove_file(cpufreq_global_kobject,
 						&_attr_all_time_in_state.attr);
 
-	for (i = 0; i < total_cpus; i++) {
-		all_stat = per_cpu(all_cpufreq_stats, i);
+	for_each_possible_cpu(cpu) {
+		all_stat = per_cpu(all_cpufreq_stats, cpu);
 		if (!all_stat)
 			continue;
 		kfree(all_stat->time_in_state);
 		kfree(all_stat);
-		per_cpu(all_cpufreq_stats, i) = NULL;
+		per_cpu(all_cpufreq_stats, cpu) = NULL;
 	}
 	if (all_freq_table) {
 		kfree(all_freq_table->freq_table);
@@ -1148,8 +1151,6 @@ static struct notifier_block notifier_trans_block = {
 	.notifier_call = cpufreq_stat_notifier_trans
 };
 
-static int __init cpufreq_stats_init(void)
-
 static struct notifier_block process_notifier_block = {
 	.notifier_call	= process_notifier,
 };
@@ -1208,7 +1209,8 @@ static int cpufreq_stats_setup(void)
 
 	return 0;
 }
-static void __exit cpufreq_stats_exit(void)
+
+static void cpufreq_stats_cleanup(void)
 {
 	unsigned int cpu;
 
