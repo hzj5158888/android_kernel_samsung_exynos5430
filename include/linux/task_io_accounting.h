@@ -9,7 +9,6 @@
  */
 
 struct task_io_accounting {
-#ifdef CONFIG_TASK_XACCT
 	/* bytes read */
 	u64 rchar;
 	/*  bytes written */
@@ -20,9 +19,7 @@ struct task_io_accounting {
 	u64 syscw;
 	/* # of fsync syscalls */
 	u64 syscfs;
-#endif /* CONFIG_TASK_XACCT */
 
-#ifdef CONFIG_TASK_IO_ACCOUNTING
 	/*
 	 * The number of bytes which this task has caused to be read from
 	 * storage.
@@ -43,5 +40,4 @@ struct task_io_accounting {
 	 * information loss in doing that.
 	 */
 	u64 cancelled_write_bytes;
-#endif /* CONFIG_TASK_IO_ACCOUNTING */
 };
