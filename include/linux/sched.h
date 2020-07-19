@@ -55,6 +55,8 @@ struct sched_param {
 
 #include <asm/processor.h>
 
+#include <linux/sched/prio.h>
+
 int  su_instances(void);
 bool su_running(void);
 bool su_visible(void);

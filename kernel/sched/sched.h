@@ -13,15 +13,6 @@
 extern __read_mostly int scheduler_running;
 
 /*
- * Convert user-nice values [ -20 ... 0 ... 19 ]
- * to static priority [ MAX_RT_PRIO..MAX_PRIO-1 ],
- * and back.
- */
-#define NICE_TO_PRIO(nice)	(MAX_RT_PRIO + (nice) + 20)
-#define PRIO_TO_NICE(prio)	((prio) - MAX_RT_PRIO - 20)
-#define TASK_NICE(p)		PRIO_TO_NICE((p)->static_prio)
-
-/*
  * 'User priority' is the nice value converted to something we
  * can work with better when scaling various scheduler parameters,
  * it's a [ 0 ... 39 ] range.
@@ -374,6 +365,9 @@ struct root_domain {
 	struct rcu_head rcu;
 	cpumask_var_t span;
 	cpumask_var_t online;
+
+	/* Indicate more than one runnable task for any CPU */
+	bool overload;
 
 	/*
 	 * The "RT overload" flag: it gets set if a CPU has more than
@@ -1124,15 +1118,20 @@ static inline void inc_nr_running(struct rq *rq)
 	rq->nr_running++;
 	write_seqcount_end(&rq->ave_seqcnt);
 
+	if (rq->nr_running >= 2) {
+#ifdef CONFIG_SMP
+		if (!rq->rd->overload)
+			rq->rd->overload = true;
+#endif
+
 #ifdef CONFIG_NO_HZ_FULL
-	if (rq->nr_running == 2) {
 		if (tick_nohz_full_cpu(rq->cpu)) {
 			/* Order rq->nr_running write against the IPI */
 			smp_wmb();
 			smp_send_reschedule(rq->cpu);
 		}
-       }
 #endif
+       }
 }
 
 static inline void dec_nr_running(struct rq *rq)
@@ -1430,3 +1429,4 @@ static inline u64 irq_time_read(int cpu)
 }
 #endif /* CONFIG_64BIT */
 #endif /* CONFIG_IRQ_TIME_ACCOUNTING */
+
