@@ -163,9 +163,8 @@ static void notify_netlink_uevent(const char *iface, struct idletimer_tg *timer)
 	pr_debug("putting nlmsg: <%s> <%s> <%s> <%s>\n", iface_msg, state_msg,
 		 timestamp_msg, uid_msg);
 	kobject_uevent_env(idletimer_tg_kobj, KOBJ_CHANGE, envp);
+
 	return;
-
-
 }
 
 static
