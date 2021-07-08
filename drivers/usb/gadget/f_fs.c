@@ -716,7 +716,7 @@ static int ffs_ep0_open(struct inode *inode, struct file *file)
 	if (unlikely(ffs->state == FFS_CLOSING))
 		return -EBUSY;
 
-	smp_mb__before_atomic();
+	smp_mb__before_atomic_dec();
 	if (atomic_read(&ffs->opened))
 		return -EBUSY;
 
@@ -1355,7 +1355,7 @@ static void ffs_data_get(struct ffs_data *ffs)
 {
 	ENTER();
 
-	smp_mb__before_atomic();
+	smp_mb__before_atomic_dec();
 	atomic_inc(&ffs->ref);
 }
 
@@ -1363,7 +1363,7 @@ static void ffs_data_opened(struct ffs_data *ffs)
 {
 	ENTER();
 
-	smp_mb__before_atomic();
+	smp_mb__before_atomic_dec();
 	atomic_inc(&ffs->ref);
 	if (atomic_add_return(1, &ffs->opened) == 1 &&
 			ffs->state == FFS_DEACTIVATED) {
@@ -1376,7 +1376,7 @@ static void ffs_data_put(struct ffs_data *ffs)
 {
 	ENTER();
 
-	smp_mb__before_atomic();
+	smp_mb__before_atomic_dec();
 	if (unlikely(atomic_dec_and_test(&ffs->ref))) {
 		pr_info("%s(): freeing\n", __func__);
 		ffs_data_clear(ffs);
@@ -1391,7 +1391,7 @@ static void ffs_data_closed(struct ffs_data *ffs)
 {
 	ENTER();
 
-	smp_mb__before_atomic();
+	smp_mb__before_atomic_dec();
 	if (atomic_dec_and_test(&ffs->opened)) {
 		if (ffs->no_disconnect) {
 			ffs->state = FFS_DEACTIVATED;
