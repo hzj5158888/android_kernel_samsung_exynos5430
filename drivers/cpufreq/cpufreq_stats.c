@@ -68,15 +68,15 @@ struct cpufreq_stats {
 #endif
 };
 
-struct all_cpufreq_stats {
-	unsigned int state_num;
-	cputime64_t *time_in_state;
-	unsigned int *freq_table;
-};
-
 struct cpufreq_power_stats {
 	unsigned int state_num;
 	unsigned int *curr;
+	unsigned int *freq_table;
+};
+
+struct all_cpufreq_stats {
+	unsigned int state_num;
+	cputime64_t *time_in_state;
 	unsigned int *freq_table;
 };
 
@@ -673,7 +673,6 @@ static int cpufreq_stats_create_table(struct cpufreq_policy *policy,
 	stat->cpu = cpu;
 	per_cpu(cpufreq_stats_table, cpu) = stat;
 
-
 	alloc_size = count * sizeof(int) + count * sizeof(u64);
 
 #ifdef CONFIG_CPU_FREQ_STAT_DETAILS
@@ -923,7 +922,7 @@ static int cpufreq_stat_notifier_policy(struct notifier_block *nb,
 	int ret, count = 0, i;
 	struct cpufreq_policy *policy = data;
 	struct cpufreq_frequency_table *table;
-	unsigned int cpu_num, cpu = policy->cpu;
+	unsigned int cpu = policy->cpu;
 
 	if (val == CPUFREQ_UPDATE_POLICY_CPU) {
 		cpufreq_stats_update_policy_cpu(policy);
@@ -947,10 +946,8 @@ static int cpufreq_stat_notifier_policy(struct notifier_block *nb,
 	if (!per_cpu(all_cpufreq_stats, cpu))
 		cpufreq_allstats_create(cpu, table, count);
 
-	for_each_possible_cpu(cpu_num) {
-		if (!per_cpu(cpufreq_power_stats, cpu_num))
-			cpufreq_powerstats_create(cpu_num, table, count);
-	}
+	if (!per_cpu(cpufreq_power_stats, cpu))
+		cpufreq_powerstats_create(cpu, table, count);
 
 	ret = cpufreq_stats_create_table(policy, cpu, table, count);
 	if (ret)
@@ -1077,7 +1074,7 @@ static int cpufreq_stats_create_table_cpu(unsigned int cpu)
 {
 	struct cpufreq_policy *policy;
 	struct cpufreq_frequency_table *table;
-	int i, count, cpu_num, ret = -ENODEV;
+	int ret = -ENODEV, i, count = 0;
 
 	policy = cpufreq_cpu_get(cpu);
 	if (!policy)
@@ -1087,21 +1084,19 @@ static int cpufreq_stats_create_table_cpu(unsigned int cpu)
 	if (!table)
 		goto out;
 
-	count = 0;
 	for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
 		unsigned int freq = table[i].frequency;
 
-		if (freq != CPUFREQ_ENTRY_INVALID)
-			count++;
+		if (freq == CPUFREQ_ENTRY_INVALID)
+			continue;
+		count++;
 	}
 
 	if (!per_cpu(all_cpufreq_stats, cpu))
 		cpufreq_allstats_create(cpu, table, count);
 
-	for_each_possible_cpu(cpu_num) {
-		if (!per_cpu(cpufreq_power_stats, cpu_num))
-			cpufreq_powerstats_create(cpu_num, table, count);
-	}
+	if (!per_cpu(cpufreq_power_stats, cpu))
+		cpufreq_powerstats_create(cpu, table, count);
 
 	ret = cpufreq_stats_create_table(policy, cpu, table, count);
 
@@ -1224,6 +1219,54 @@ static void cpufreq_stats_cleanup(void)
 		cpufreq_stats_free_sysfs(cpu);
 	}
 	cpufreq_allstats_free();
+}
+
+#ifdef CONFIG_BL_SWITCHER
+static int cpufreq_stats_switcher_notifier(struct notifier_block *nfb,
+					unsigned long action, void *_arg)
+{
+	switch (action) {
+	case BL_NOTIFY_PRE_ENABLE:
+	case BL_NOTIFY_PRE_DISABLE:
+		cpufreq_stats_cleanup();
+		break;
+
+	case BL_NOTIFY_POST_ENABLE:
+	case BL_NOTIFY_POST_DISABLE:
+		cpufreq_stats_setup();
+		break;
+
+	default:
+		return NOTIFY_DONE;
+	}
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block switcher_notifier = {
+	.notifier_call = cpufreq_stats_switcher_notifier,
+};
+#endif
+
+static int __init cpufreq_stats_init(void)
+{
+	int ret;
+	spin_lock_init(&cpufreq_stats_lock);
+
+	ret = cpufreq_stats_setup();
+#ifdef CONFIG_BL_SWITCHER
+	if (!ret)
+		bL_switcher_register_notifier(&switcher_notifier);
+#endif
+	return ret;
+}
+
+static void __exit cpufreq_stats_exit(void)
+{
+#ifdef CONFIG_BL_SWITCHER
+	bL_switcher_unregister_notifier(&switcher_notifier);
+#endif
+	cpufreq_stats_cleanup();
 	cpufreq_powerstats_free();
 }
 

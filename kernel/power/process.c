@@ -155,20 +155,6 @@ int freeze_processes(void)
 		printk("done.");
 		__usermodehelper_set_disable_depth(UMH_DISABLED);
 		oom_killer_disable();
-
-		/*
-		 * There might have been an OOM kill while we were
-		 * freezing tasks and the killed task might be still
-		 * on the way out so we have to double check for race.
-		 */
-		if (oom_kills_count() != oom_kills_saved &&
-		    !check_frozen_processes()) {
-			__usermodehelper_set_disable_depth(UMH_ENABLED);
-			printk("OOM in progress.");
-			error = -EBUSY;
-		} else {
-			printk("done.");
-		}
 	}
 	printk("\n");
 	BUG_ON(in_atomic());
