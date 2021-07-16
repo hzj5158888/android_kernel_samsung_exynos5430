@@ -6,10 +6,10 @@ dtb-$(CONFIG_BOARD_SLTEEUR) += exynos5430-slte_eur_open_03.dtb \
 	exynos5430-slte_eur_open_09.dtb
 	
 dtb-$(CONFIG_BOARD_SLTEKOR) += exynos5430-slte_kor_open_00.dtb \
-	exynos5430-slte_kor_open_01.dts \
-	exynos5430-slte_kor_open_02.dts \
-	exynos5430-slte_kor_open_04.dts \
-	exynos5430-slte_kor_open_06.dts
+	exynos5430-slte_kor_open_01.dtb \
+	exynos5430-slte_kor_open_02.dtb \
+	exynos5430-slte_kor_open_04.dtb \
+	exynos5430-slte_kor_open_06.dtb
 
 DTB_NAMES := $(subst $\",,$(CONFIG_BUILD_ARM_APPENDED_DTB_IMAGE_NAMES))
 ifneq ($(DTB_NAMES),)
