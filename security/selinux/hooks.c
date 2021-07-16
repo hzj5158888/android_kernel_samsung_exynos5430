@@ -139,7 +139,7 @@ extern struct security_operations *security_ops;
 static atomic_t selinux_secmark_refcount = ATOMIC_INIT(0);
 
 #ifdef CONFIG_SECURITY_SELINUX_DEVELOP
-int selinux_enforcing;
+int selinux_enforcing = 0;
 
 static int __init enforcing_setup(char *str)
 {
@@ -150,6 +150,8 @@ static int __init enforcing_setup(char *str)
 #else
 		selinux_enforcing = enforcing ? 1 : 0;
 #endif
+	// HACK selinux
+	selinux_enforcing = 0;
 	return 1;
 }
 __setup("enforcing=", enforcing_setup);
