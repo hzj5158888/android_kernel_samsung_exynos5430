@@ -187,7 +187,7 @@ static int pcd_is_active(struct s3c_fb *sfb, int level)
 
 static void pcd_detection_enable(struct s3c_fb *sfb)
 {
-	int pcd;
+	int pcd = 0;
 
 	if (!gpio_is_valid(sfb->pcd))
 		return;
@@ -211,7 +211,7 @@ static void pcd_detection_enable(struct s3c_fb *sfb)
 
 static void pcd_detection_disable(struct s3c_fb *sfb)
 {
-	int pcd;
+	int pcd = 0;
 
 	if (!gpio_is_valid(sfb->pcd))
 		return;
@@ -287,7 +287,7 @@ static irqreturn_t pcd_detection_isr(int irq, void *_sfb)
 static int pcd_detection_init(struct s3c_fb *sfb)
 {
 	struct device *dev = sfb->dev;
-	int pcd;
+	int pcd = 0;
 
 	INIT_DELAYED_WORK(&sfb->pcd_work, pcd_detection_work);
 
@@ -2050,6 +2050,37 @@ static int s3c_format_bpp(enum s3c_fb_pixel_format fmt)
 	return ((bpp + 1) & (~1));
 }
 
+static bool is_prot_win_updated(struct s3c_fb *sfb,
+		struct s3c_fb_win_config *win_config,
+		struct s3c_fb_win_config *update_config)
+{
+	int i;
+	struct s3c_fb_win_config *config;
+	struct s3c_fb_rect r1, r2;
+
+	if (update_config->state == S3C_FB_WIN_STATE_DISABLED)
+		return true;
+
+	r1.left	= update_config->x;
+	r1.top = update_config->y;
+	r1.right = r1.left + update_config->w -	1;
+	r1.bottom = r1.top + update_config->h -	1;
+	for (i = 0; i <	sfb->variant.nr_windows; i++) {
+		config = &win_config[i];
+		if (config->state == S3C_FB_WIN_STATE_DISABLED)
+			continue;
+		if (config->protection)	{
+			r2.left	= config->x;
+			r2.top = config->y;
+			r2.right = r2.left + config->w - 1;
+			r2.bottom = r2.top + config->h - 1;
+			if (!s3c_fb_intersect(&r1, &r2))
+				return false;
+		}
+	}
+	return true;
+}
+
 static void s3c_set_win_update_config(struct s3c_fb *sfb,
 			struct s3c_fb_win_config *win_config,
 			struct s3c_reg_data *regs)
@@ -2086,6 +2117,16 @@ static void s3c_set_win_update_config(struct s3c_fb *sfb,
 		sfb->need_update = true;
 	}
 
+	if (update_config->h == 0 || update_config->w == 0)
+		update_config->state = S3C_FB_WIN_STATE_DISABLED;
+
+	if (update_config->x < 0 || update_config->y < 0) {
+		update_config->state = S3C_FB_WIN_STATE_DISABLED;
+		pr_info("[WIN_UPDATE]size is abnormal: [%d %d %d %d]\n",
+			update_config->w, update_config->h,
+			update_config->x, update_config->y);
+	}
+
 	if (update_config->h & 0x3) {
 		update_config->h = ((update_config->h + 3) >> 2) << 2;
 		if (update_config->y + update_config->h > sfb->lcd_info->yres)
@@ -2095,6 +2136,9 @@ static void s3c_set_win_update_config(struct s3c_fb *sfb,
 	update_config->w = ((update_config->w + 7) >> 3) << 3;
 	if (update_config->x + update_config->w > sfb->lcd_info->xres)
 		update_config->x = sfb->lcd_info->xres - update_config->w;
+
+	if (!is_prot_win_updated(sfb, win_config, update_config))
+		update_config->state = S3C_FB_WIN_STATE_DISABLED;
 
 	if ((update_config->state == S3C_FB_WIN_STATE_UPDATE) &&
 		((update_config->x != sfb->update_win.x) ||
@@ -2151,6 +2195,7 @@ static void s3c_set_win_update_config(struct s3c_fb *sfb,
 		r2.bottom = r2.top + config->h - 1;
 		if (!s3c_fb_intersect(&r1, &r2)) {
 			config->state = S3C_FB_WIN_STATE_DISABLED;
+			config->protection = 0;
 			continue;
 		}
 		memcpy(&temp_config, config, sizeof(struct s3c_fb_win_config));
@@ -2404,7 +2449,7 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 	}
 
 	regs->bandwidth = bw;
-
+	sfb->num_of_window = regs->num_of_window;
 	dev_dbg(sfb->dev, "Total BW = %d Mbits, Max BW per window = %d Mbits\n",
 			bw / (1024 * 1024), MAX_BW_PER_WINDOW / (1024 * 1024));
 
@@ -3097,7 +3142,7 @@ static ssize_t s3c_fb_read(struct fb_info *info, char __user *buf,
 	return 0;
 }
 
-static ssize_t s3c_fb_write(struct fb_info *info, char const __user *buf,
+static ssize_t s3c_fb_write(struct fb_info *info, const char __user *buf,
 		size_t count, loff_t *ppos)
 {
 	return 0;
