@@ -168,6 +168,7 @@ static u32 s3c_fb_rgborder(int format);
 static u32 s3c_fb_get_pixel_format(struct fb_var_screeninfo *var);
 
 #if defined(CONFIG_FB_I80_COMMAND_MODE) && defined(CONFIG_LCD_PCD)
+extern unsigned int lcdtype;
 #if 0
 static int pcd_is_active(struct s3c_fb *sfb, int level)
 {
@@ -189,21 +190,27 @@ static void pcd_detection_enable(struct s3c_fb *sfb)
 {
 	int pcd = 0;
 
+	if (!lcdtype)
+		goto pcd_work;
+
 	if (!gpio_is_valid(sfb->pcd))
 		return;
 #if 0
 	sfb->pcd_detected = 0;
 	pcd = gpio_get_value(sfb->pcd);
-	if (!pcd) {
+	if (!pcd)
 		sfb->pcd_detected = 1;
-		schedule_delayed_work(&sfb->pcd_work, HZ/60);
-	}
+
+	enable_irq(sfb->pcd_irq);
 #else
 	pcd = gpio_get_value(sfb->pcd);
+
+	enable_irq(sfb->pcd_irq);
+#endif
+
+pcd_work:
 	if (sfb->pcd_detected)
 		schedule_delayed_work(&sfb->pcd_work, HZ/60);
-#endif
-	enable_irq(sfb->pcd_irq);
 
 	dev_info(sfb->dev, "%s: pcd_detected %d, pcd gpio %d\n",
 			__func__, sfb->pcd_detected, pcd);
@@ -213,14 +220,18 @@ static void pcd_detection_disable(struct s3c_fb *sfb)
 {
 	int pcd = 0;
 
+	if (!lcdtype)
+		goto pcd_work;
+
 	if (!gpio_is_valid(sfb->pcd))
 		return;
 
 	disable_irq(sfb->pcd_irq);
 
-	flush_delayed_work(&sfb->pcd_work);
-
 	pcd = gpio_get_value(sfb->pcd);
+
+pcd_work:
+	flush_delayed_work(&sfb->pcd_work);
 
 	dev_info(sfb->dev, "%s: pcd_detected %d, pcd gpio %d\n",
 			__func__, sfb->pcd_detected, pcd);
@@ -288,8 +299,17 @@ static int pcd_detection_init(struct s3c_fb *sfb)
 {
 	struct device *dev = sfb->dev;
 	int pcd = 0;
+	sfb->pcd = -EINVAL;
 
 	INIT_DELAYED_WORK(&sfb->pcd_work, pcd_detection_work);
+
+	if (!lcdtype)
+		goto pcd_work;
+
+	if (!of_find_property(dev->of_node, "oled-pcd-gpio", NULL)) {
+		dev_err(dev, "failed to find oled-pcd-gpio property\n");
+		return -EINVAL;
+	}
 
 	sfb->pcd = of_get_named_gpio(dev->of_node, "oled-pcd-gpio", 0);
 	if (sfb->pcd < 0) {
@@ -307,6 +327,8 @@ static int pcd_detection_init(struct s3c_fb *sfb)
 
 	sfb->pcd_detected = 0;
 	pcd = gpio_get_value(sfb->pcd);
+
+pcd_work:
 	if (!pcd) {
 		sfb->pcd_detected = 1;
 		schedule_delayed_work(&sfb->pcd_work, HZ/60);
@@ -5227,7 +5249,7 @@ int decon_hibernation_power_on(struct display_driver *dispdrv)
 	decon_reg_blend_alpha_bits(BLENDCON_NEW_8BIT_ALPHA_VALUE);
 	decon_reg_set_vidout(sfb->psr_mode, 1);
 	decon_reg_set_crc(1);
-
+	decon_reg_set_sys_reg();
 	if (sfb->psr_mode == S3C_FB_MIPI_COMMAND_MODE)
 		decon_reg_set_fixvclk(DECON_VCLK_RUN_VDEN_DISABLE);
 	else
