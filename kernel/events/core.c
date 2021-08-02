@@ -7053,14 +7053,8 @@ SYSCALL_DEFINE5(perf_event_open,
 		 * See perf_event_ctx_lock() for comments on the details
 		 * of swizzling perf_event::ctx.
 		 */
-		mutex_lock_double(&gctx->mutex, &ctx->mutex);
-
-<<<<<<< HEAD
 		mutex_lock(&gctx->mutex);
 		perf_remove_from_context(group_leader, false);
-=======
-		perf_remove_from_context(group_leader);
->>>>>>> 0aa98a5d4f6... BACKPORT: perf: Fix event->ctx locking
 
 		/*
 		 * Removing from the context ends up with disabled
@@ -7086,12 +7080,7 @@ SYSCALL_DEFINE5(perf_event_open,
 		 * the old lists, before installing it on new lists.
 		 */
 		synchronize_rcu();
-<<<<<<< HEAD
 		perf_install_in_context(ctx, group_leader, group_leader->cpu);
-=======
-
-		perf_install_in_context(ctx, group_leader, event->cpu);
->>>>>>> 0aa98a5d4f6... BACKPORT: perf: Fix event->ctx locking
 		get_ctx(ctx);
 		list_for_each_entry(sibling, &group_leader->sibling_list,
 				    group_entry) {
