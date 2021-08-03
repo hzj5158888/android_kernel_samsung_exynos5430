@@ -46,7 +46,7 @@ struct gserial {
 	/* REVISIT avoid this CDC-ACM support harder ... */
 	struct usb_cdc_line_coding port_line_coding;	/* 9600-8-N-1 etc */
 
-	u16				serial_state;
+	//u16				serial_state;
 #ifdef CONFIG_USB_ANDROID_SAMSUNG_DIAG_BRIDGE
 	/* control signal callbacks*/
 	unsigned int (*get_dtr)(struct gserial *p);

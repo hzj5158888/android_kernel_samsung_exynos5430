@@ -64,6 +64,7 @@ static struct all_freq_table *all_freq_table;
 static DEFINE_PER_CPU(struct all_cpufreq_stats *, all_cpufreq_stats);
 static DEFINE_PER_CPU(struct cpufreq_stats *, cpufreq_stats_table);
 static DEFINE_PER_CPU(struct cpufreq_power_stats *, cpufreq_power_stats);
+static DEFINE_PER_CPU(struct cpufreq_stats *, prev_cpufreq_stats_table);
 
 struct cpufreq_stats_attribute {
 	struct attribute attr;

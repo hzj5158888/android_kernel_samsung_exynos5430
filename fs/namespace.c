@@ -1599,7 +1599,6 @@ static int attach_recursive_mnt(struct mount *source_mnt,
 		err = invent_group_ids(source_mnt, true);
 		if (err)
 			goto out;
-<<<<<<< HEAD
 	}
 	err = propagate_mnt(dest_mnt, dest_mp, source_mnt, &tree_list);
 	if (err)
@@ -1608,12 +1607,6 @@ static int attach_recursive_mnt(struct mount *source_mnt,
 	br_write_lock(&vfsmount_lock);
 
 	if (IS_MNT_SHARED(dest_mnt)) {
-=======
-		err = propagate_mnt(dest_mnt, dest_mp, source_mnt, &tree_list);
-		if (err)
-			goto out_cleanup_ids;
-		br_write_lock(&vfsmount_lock);
->>>>>>> parent of d010d639fd7... BACKPORT: smarter propagate_mnt()
 		for (p = source_mnt; p; p = next_mnt(p, source_mnt))
 			set_mnt_shared(p);
 	}
@@ -1635,12 +1628,8 @@ static int attach_recursive_mnt(struct mount *source_mnt,
 	return 0;
 
  out_cleanup_ids:
-<<<<<<< HEAD
 	if (IS_MNT_SHARED(dest_mnt))
 		cleanup_group_ids(source_mnt, NULL);
-=======
-	cleanup_group_ids(source_mnt, NULL);
->>>>>>> parent of d010d639fd7... BACKPORT: smarter propagate_mnt()
  out:
 	return err;
 }

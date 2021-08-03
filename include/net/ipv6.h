@@ -423,7 +423,7 @@ static inline void ipv6_addr_set(struct in6_addr *addr,
 }
 
 static inline bool ipv6_addr_equal(const struct in6_addr *a1,
-				   const struct in6_addr *a2)
+				    const struct in6_addr *a2)
 {
 #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS) && BITS_PER_LONG == 64
 	const unsigned long *ul1 = (const unsigned long *)a1;
