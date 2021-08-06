@@ -284,6 +284,14 @@ config ASV_MARGIN_TEST
 config SAMSUNG_PRODUCT_SHIP
 	bool "set up for product shipping"
 	default n
+	
+config BOARD_SLTEEUR
+	bool "Samsung Galaxy Alpha (Europe)"
+	default n
+
+config BOARD_SLTEKOR
+	bool "Samsung Galaxy Alpha (Korean)"
+	default n
 
 if EXYNOS_ATAGS
 
