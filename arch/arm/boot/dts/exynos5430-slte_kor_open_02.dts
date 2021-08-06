@@ -11,19 +11,19 @@
 
 /dts-v1/;
 #include "exynos5430-s_common.dtsi"
-#include "exynos5430-s_gpio_09.dtsi"
+#include "exynos5430-s_gpio_03.dtsi"
 #include "exynos5430-s_battery.dtsi"
 #include "exynos5430-s_kor_gpio_01.dtsi"
 #include "exynos5430-s_kor-modem-ss300.dtsi"
 
 / {
-	model = "Samsung S LTE KOR revision 06 board(EVT1) based on EXYNOS5430 with Shannon modem";
+	model = "Samsung S LTE KOR revision 02 board(EVT1) based on EXYNOS5430 with Shannon modem";
 	model_info-chip = <5430>;
 	model_info-platform = "slte";
 	model_info-subtype = "slte_kor_open";
-	model_info-hw_rev = <9>;
-	model_info-hw_rev_end = <255>; /* If add new dts file for new hw , it is set to <x>. x is suppored max system revision by this dts */
-	compatible = "samsung,S LTE KOR,r06", "samsung,exynos5430";
+	model_info-hw_rev = <4>;
+	model_info-hw_rev_end = <6>; /* If add new dts file for new hw , it is set to <x>. x is suppored max system revision by this dts */
+	compatible = "samsung,S LTE KOR,r02", "samsung,exynos5430";
 
 	dwmmc2@15560000 {
 		supports-sdr104-mode;
@@ -385,6 +385,7 @@
 			samsung,pins ="gpg3-2", "gpg3-3";
 			samsung,pin-pud =<0>;
 		};
+
 	};
 
 	pinctrl@10580000 {
@@ -429,6 +430,20 @@
 			sec-nfc,ven-gpio = <&gpf1 4 0>;
 			sec-nfc,irq-gpio = <&gpa1 3 0>;
 			sec-nfc,firm-gpio = <&gpj0 2 0>;
+			sec-nfc,clk_req-gpio = <&gpa0 0 0xf>;
+			sec-nfc,clk_use = <2>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&fimc_is_ch1_mclk>;
+			clock-names = "sclk_isp_sensor1",
+						"mout_sclk_isp_sensor1",
+						"dout_sclk_isp_sensor1_a",
+						"dout_sclk_isp_sensor1_b",
+						"gate_top_cam1";
+			clocks = <&clock 34>,
+					<&clock 3067>,
+					<&clock 4092>,
+					<&clock 4093>,
+					<&clock 2780>;
 		};
 	};
 
@@ -447,30 +462,36 @@
 			invensense,irq-gpio= <&gpa3 4 0>;
 			invensense,int_config = <0x00>;
 			invensense,level_shifter = <0>;
-			invensense,orientation = <7>;
+			invensense,orientation = <5>;
 		};
 
 		yas532-i2c@2e {
 			compatible = "yas_magnetometer";
 			reg = <0x2e>;
-			yas,orientation = <0>;
 		};
 	};
-	
+
 	pinctrl@14CC0000 {
-		i2c3_bus: i2c3-bus {
+		sensor2_i2c: sensor2-i2c {
+			samsung,pins ="gpf4-1", "gpf4-2";
 			samsung,pin-pud =<0>;
 		};
 	};
 
-	i2c@14E30000 {
-		samsung,i2c-sda-delay = <100>;
-		samsung,i2c-max-bus-freq = <400000>;
+	i2c@38 {
+		cell-index = <38>;
+		compatible = "i2c-gpio";
+		gpios = <&gpf4 2 0
+		&gpf4 1 0
+		>;
+		i2c-gpio,delay-us = <2>;
+		#address-cells = <1>;
+		#size-cells = <0>;
 		pinctrl-names ="default";
-		pinctrl-0 = <&i2c3_bus>;
+		pinctrl-0 = <&sensor2_i2c>;
 		status = "okay";
 
-		tmd3782@39 {
+ 		tmd3782@39 {
 			compatible = "taos,tmd3782";
 			reg = <0x39>;
 			interrupts = <3 0 0>;
@@ -969,5 +990,9 @@
 			max98504,tx_mode = <1>;
 			max98504,cfg_data = <0 0 0 0 0 3 0 2 0 0>;
 		};
+	};
+
+	fimc_is_companion@14180000 {
+		/delete-property/ gpios_cam_en;
 	};
 };

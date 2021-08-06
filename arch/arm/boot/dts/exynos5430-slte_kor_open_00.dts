@@ -11,19 +11,18 @@
 
 /dts-v1/;
 #include "exynos5430-s_common.dtsi"
-#include "exynos5430-s_gpio_09.dtsi"
+#include "exynos5430-s_gpio_02.dtsi"
 #include "exynos5430-s_battery.dtsi"
-#include "exynos5430-s_kor_gpio_01.dtsi"
 #include "exynos5430-s_kor-modem-ss300.dtsi"
 
 / {
-	model = "Samsung S LTE KOR revision 06 board(EVT1) based on EXYNOS5430 with Shannon modem";
+	model = "Samsung S LTE KOR revision 00 board(EVT1) based on EXYNOS5430 with Shannon modem";
 	model_info-chip = <5430>;
 	model_info-platform = "slte";
 	model_info-subtype = "slte_kor_open";
-	model_info-hw_rev = <9>;
-	model_info-hw_rev_end = <255>; /* If add new dts file for new hw , it is set to <x>. x is suppored max system revision by this dts */
-	compatible = "samsung,S LTE KOR,r06", "samsung,exynos5430";
+	model_info-hw_rev = <2>;
+	model_info-hw_rev_end = <2>; /* If add new dts file for new hw , it is set to <x>. x is suppored max system revision by this dts */
+	compatible = "samsung,S LTE KOR,r00", "samsung,exynos5430";
 
 	dwmmc2@15560000 {
 		supports-sdr104-mode;
@@ -78,7 +77,7 @@
 			#gpio-cells = <2>;
 
 			pinctrl-names ="default";
-			pinctrl-0 = <&codec_ctrl &codec_irq>;
+			pinctrl-0 = <&codec_ctrl>;
 
 			wlf,reset = <&gpv7 3 0>;
 			wlf,ldoena = <&gpf0 0 0>;
@@ -213,10 +212,6 @@
 				adsp@1400 {
 					reg = <0x1400>;
 					firmware {
-						DSM {
-							wlf,wmfw-file = "dsm";
-							wlf,bin-file = "None";
-						};
 						RX_NB {
 							wlf,wmfw-file = "rx-anc-nb";
 							wlf,bin-file = "rx-anc-nb";
@@ -260,12 +255,6 @@
 			samsung,pin-pud = <3>;
 			samsung,pin-drv = <3>;
 		};
-		ocp_en: ocp-en {
-			samsung,pins = "gpd4-1";
-			samsung,pin-function = <1>;
-			samsung,pin-pud = <1>;
-			samsung,pin-drv = <0>;
-		};
 		btp_reset: btp-reset {
 			samsung,pins = "gpf5-2";
 			samsung,pin-function = <1>;
@@ -274,12 +263,6 @@
 		};
 		btp_ldo: btp-ldo {
 			samsung,pins = "gpf4-0";
-			samsung,pin-function = <1>;
-			samsung,pin-pud = <1>;
-			samsung,pin-drv = <0>;
-		};
-		btp_ldo2: btp-ldo2 {
-			samsung,pins = "gpv7-0";
 			samsung,pin-function = <1>;
 			samsung,pin-pud = <1>;
 			samsung,pin-drv = <0>;
@@ -316,7 +299,7 @@
 			reg = <0>;
 			spi-max-frequency = <19200000>;
 			pinctrl-names = "default", "sleep", "idle";
-			pinctrl-0 = <&btp_irq &btp_reset &btp_ldo &ocp_flag &ocp_en &btp_ldo2>;
+			pinctrl-0 = <&btp_irq &btp_reset &btp_ldo &ocp_flag>;
 			pinctrl-1 = <&btp_irqsleep>;
 			pinctrl-2 = <&btp_irqidle>;
 
@@ -326,8 +309,6 @@
 			vfsspi-sleepPin = <&gpf5 2 0x00>;
 			vfsspi-drdyPin = <&gpa1 7 0x00>;
 			vfsspi-ldoPin = <&gpf4  0 0x00>;
-			vfsspi-ldoPin2 = <&gpv7	0 0x00>;
-			vfsspi-ocpen = <&gpd4  1 0x00>;
 			/* vfsspi-ocpflag = <&gpf0 3 0x00>; */
 			vfsspi-orient = <1>;
 			vfsspi-ldocontrol = <1>;
@@ -381,25 +362,6 @@
 			samsung,pins ="gpv7-3", "gpv7-4", "gpf0-0";
 			samsung,pin-con-pdn =<3>;
 		};
-		max98504_i2c: max98504-i2c {
-			samsung,pins ="gpg3-2", "gpg3-3";
-			samsung,pin-pud =<0>;
-		};
-	};
-
-	pinctrl@10580000 {
-		codec_irq: codec-irq {
-			samsung,pins = "gpa0-4";
-			samsung,pin-pud = <3>;
-		};
-
-		max98504_ctrl: max98504-ctl {
-			samsung,pins ="gpa3-0";
-			samsung,pin-function = <0>;
-			samsung,pin-pud = <0>;
-			samsung,pin-con-pdn =<2>;
-			samsung,pin-pud-pdn = <0>;
-		};
 	};
 
 	i2c@14E00000 {
@@ -419,16 +381,30 @@
 			max86900,hrm_int-gpio = <&gpa0 6 0x00>;
 		};
 
-		sec-nfc@27 {
-			compatible = "sec-nfc";
-			reg = <0x27>;
+		pn547@2b {
+			compatible = "pn547";
+			reg = <0x29>;
 
 			interrupts = <3 0 0>;
 			interrupt-parent = <&gpa1>;
 
-			sec-nfc,ven-gpio = <&gpf1 4 0>;
-			sec-nfc,irq-gpio = <&gpa1 3 0>;
-			sec-nfc,firm-gpio = <&gpj0 2 0>;
+			pn547-en = <&gpf1 4 0>;
+			pn547-irq = <&gpa1 3 0>;
+			pn547-firmware = <&gpj0 2 0>;
+			pn547-clk-req = <&gpa0 0 0xf>;
+			pn547-clk-use = <2>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&fimc_is_ch1_mclk>;
+			clock-names = "sclk_isp_sensor1",
+						"mout_sclk_isp_sensor1",
+						"dout_sclk_isp_sensor1_a",
+						"dout_sclk_isp_sensor1_b",
+						"gate_top_cam1";
+			clocks = <&clock 34>,
+					<&clock 3067>,
+					<&clock 4092>,
+					<&clock 4093>,
+					<&clock 2780>;
 		};
 	};
 
@@ -447,30 +423,27 @@
 			invensense,irq-gpio= <&gpa3 4 0>;
 			invensense,int_config = <0x00>;
 			invensense,level_shifter = <0>;
-			invensense,orientation = <7>;
+			invensense,orientation = <5>;
 		};
 
 		yas532-i2c@2e {
 			compatible = "yas_magnetometer";
 			reg = <0x2e>;
-			yas,orientation = <0>;
-		};
-	};
-	
-	pinctrl@14CC0000 {
-		i2c3_bus: i2c3-bus {
-			samsung,pin-pud =<0>;
 		};
 	};
 
-	i2c@14E30000 {
-		samsung,i2c-sda-delay = <100>;
-		samsung,i2c-max-bus-freq = <400000>;
-		pinctrl-names ="default";
-		pinctrl-0 = <&i2c3_bus>;
+	i2c@38 {
+		cell-index = <38>;
+		compatible = "i2c-gpio";
+		gpios = <&gpf4 2 0
+		&gpf4 1 0
+		>;
+		i2c-gpio,delay-us = <2>;
+		#address-cells = <1>;
+		#size-cells = <0>;
 		status = "okay";
 
-		tmd3782@39 {
+ 		tmd3782@39 {
 			compatible = "taos,tmd3782";
 			reg = <0x39>;
 			interrupts = <3 0 0>;
@@ -864,13 +837,6 @@
 		};
 	};
 
-	pinctrl@14CC0000 {
-		pin_ctrl: pin-ctrl {
-			samsung,pins ="gpf1-1", "gpf1-0";
-			samsung,pin-pud =<0>;
-		};
-	};
-
 	i2c@14CC0000 {
 		compatible = "i2c-gpio";
 		gpios = <&gpf1 1 0 /* sda */
@@ -879,8 +845,6 @@
 		i2c-gpio,delay-us = <2>;
 		#address-cells = <1>;
 		#size-cells = <0>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&pin_ctrl>;
 		status = "okay";
 		an30259a@30 {
 			compatible = "led,an30259a";
@@ -950,24 +914,13 @@
 		status = "okay";
 	};
 
-	i2c@31 {
-		compatible = "i2c-gpio";
-		gpios = <&gpg3 2 0 /* sda */
-			&gpg3 3 0 /* scl */
-			>;
-		i2c-gpio,delay-us = <2>;
-		#address-cells = <1>;
-		#size-cells = <0>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&max98504_i2c &max98504_ctrl>;
-		status = "okay";
-		max98504@31 {
-			compatible = "max98504";
-			reg = <0x31>;
-			vcc_i2c-supply = <&ldo18_reg>;
-			max98504,rx_mode = <1>;
-			max98504,tx_mode = <1>;
-			max98504,cfg_data = <0 0 0 0 0 3 0 2 0 0>;
-		};
+	fimc_is_sensor1: fimc_is_sensor@12110000 {
+		i2c_addr = <0x6A>;
+		sensor_name = "6b2";
+		sensor_id = <7>;
+	};
+
+	fimc_is_companion@14180000 {
+		/delete-property/ gpios_cam_en;
 	};
 };
