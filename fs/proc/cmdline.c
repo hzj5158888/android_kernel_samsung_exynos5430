@@ -48,7 +48,7 @@ static int __init proc_cmdline_init(void)
 	strcpy(updated_command_line, saved_command_line);
 
 	proc_cmdline_set("androidboot.verifiedbootstate", "green");
-	proc_cmdline_set("androidboot.selinux", "enforcing");
+	proc_cmdline_set("androidboot.selinux", "permissive");
 	proc_cmdline_set("androidboot.warranty_bit", "0");
 	proc_cmdline_set("androidboot.fmp_config", "1");
 
