@@ -54,6 +54,23 @@
 		reg = <0x10000000 0x100>;
 		reg2 = <0x10004000 0x100>;
 	};
+	
+	firmware: firmware {
+		android {
+			compatible = "android,firmware";
+			fstab {
+				compatible = "android,fstab";
+				system {
+					compatible = "android,system";
+					dev = "/dev/block/platform/15540000.dwmmc0/by-name/SYSTEM";
+					type = "ext4";
+					mnt_flags = "ro,noatime,noauto_da_alloc,discard,data=ordered,errors=panic";
+					fsmgr_flags = "wait";
+					status = "ok";
+				};
+			};
+		};
+	};
 
 	cpus {
 		#address-cells = <1>;
