@@ -2026,6 +2026,16 @@ static int path_lookupat(int dfd, const char *name,
 		}
 	}
 
+	if (!err) {
+		struct super_block *sb = nd->inode->i_sb;
+		if (sb->s_flags & MS_RDONLY) {
+			if (d_is_su(nd->path.dentry) && !su_visible()) {
+				path_put(&nd->path);
+				err = -ENOENT;
+			}
+		}
+	}
+
 	if (base)
 		fput(base);
 
@@ -3050,6 +3060,7 @@ static struct file *path_openat(int dfd, struct filename *pathname,
 	if (unlikely(file->f_flags & __O_TMPFILE)) {
 		error = do_tmpfile(dfd, pathname, nd, flags, op, file, &opened);
 		goto out2;
+	}
 
 	error = path_init(dfd, pathname->name, flags | LOOKUP_PARENT, nd, &base);
 	if (unlikely(error))
@@ -3506,16 +3517,6 @@ exit3:
 	dput(dentry);
 exit2:
 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
-
-	if (path_buf && !error) {
-		nd.path.dentry->d_sb->s_op->unlink_callback(nd.path.dentry->d_sb,
-			propagate_path);
-	}
-	if (path_buf) {
-		kfree(path_buf);
-		path_buf = NULL;
-	}
-
 	mnt_drop_write(nd.path.mnt);
 exit1:
 	path_put(&nd.path);
@@ -3585,6 +3586,8 @@ static long do_unlinkat(int dfd, const char __user *pathname)
 	struct nameidata nd;
 	struct inode *inode = NULL;
 	unsigned int lookup_flags = 0;
+	char *path_buf = NULL;
+	char *propagate_path = NULL;
 retry:
 	name = user_path_parent(dfd, pathname, &nd, lookup_flags);
 	if (IS_ERR(name))
@@ -3624,16 +3627,10 @@ exit2:
 		dput(dentry);
 	}
 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
-	
 	if (path_buf && !error) {
 		inode->i_sb->s_op->unlink_callback(inode->i_sb, propagate_path);
-	}
-	
-	if (path_buf) {
 		kfree(path_buf);
-		path_buf = NULL;
 	}
-	
 	if (inode)
 		iput(inode);	/* truncate the inode here */
 	mnt_drop_write(nd.path.mnt);
