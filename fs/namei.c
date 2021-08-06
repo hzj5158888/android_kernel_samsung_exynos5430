@@ -3501,8 +3501,7 @@ exit3:
 	dput(dentry);
 exit2:
 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
-<<<<<<< HEAD
-=======
+
 	if (path_buf && !error) {
 		nd.path.dentry->d_sb->s_op->unlink_callback(nd.path.dentry->d_sb,
 			propagate_path);
@@ -3511,7 +3510,7 @@ exit2:
 		kfree(path_buf);
 		path_buf = NULL;
 	}
->>>>>>> 76a813036e3... fs: update for sdcardfs
+
 	mnt_drop_write(nd.path.mnt);
 exit1:
 	path_put(&nd.path);

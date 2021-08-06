@@ -168,8 +168,6 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
 	mapping->private_data = NULL;
 	mapping->backing_dev_info = &default_backing_dev_info;
 	mapping->writeback_index = 0;
-<<<<<<< HEAD
-=======
 #if defined(CONFIG_MMC_DW_FMP_ECRYPT_FS) || defined(CONFIG_UFS_FMP_ECRYPT_FS)
 	mapping->iv = NULL;
 	mapping->key = NULL;
@@ -181,10 +179,6 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
 	mapping->cc_enable = 0;
 #endif
 #endif
-#ifdef CONFIG_SDP
-	mapping->userid = 0;
-#endif
->>>>>>> 76a813036e3... fs: update for sdcardfs
 
 	/*
 	 * If the block_device provides a backing_dev_info for client
