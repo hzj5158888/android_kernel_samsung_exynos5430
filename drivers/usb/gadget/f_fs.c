@@ -1270,19 +1270,11 @@ ffs_fs_mount(struct file_system_type *t, int flags,
 	if (unlikely(ret < 0))
 		return ERR_PTR(ret);
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-=======
->>>>>>> fa6d74580b6... UPSTREAM: usb: gadget: f_fs: add "no_disconnect" mode
 	ffs = ffs_data_new();
 	if (unlikely(!ffs))
 		return ERR_PTR(-ENOMEM);
 	ffs->file_perms = data.perms;
-<<<<<<< HEAD
-=======
 	ffs->no_disconnect = data.no_disconnect;
->>>>>>> fa6d74580b6... UPSTREAM: usb: gadget: f_fs: add "no_disconnect" mode
 
 	ffs->dev_name = kstrdup(dev_name, GFP_KERNEL);
 	if (unlikely(!ffs->dev_name)) {
@@ -1290,10 +1282,6 @@ ffs_fs_mount(struct file_system_type *t, int flags,
 		return ERR_PTR(-ENOMEM);
 	}
 
-<<<<<<< HEAD
-=======
->>>>>>> e6215ba17db... UPSTREAM: usb: gadget: f_fs: add "no_disconnect" mode
->>>>>>> fa6d74580b6... UPSTREAM: usb: gadget: f_fs: add "no_disconnect" mode
 	ffs_dev = functionfs_acquire_dev_callback(dev_name);
 	if (IS_ERR(ffs_dev)) {
 		ffs_data_put(ffs);
